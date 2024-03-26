@@ -18352,9 +18352,10 @@ def Fin_view_payment_received(request):
             cmp = com.company_id
         
         allmodules = Fin_Modules_List.objects.get(company_id = cmp,status = 'New')
+        payment = Fin_Payment_Received.objects.filter(company = cmp)
 
 
-        return render(request,'company/Fin_view_payment_received.html',{'allmodules':allmodules,'com':com,'cmp':cmp, 'data':data})
+        return render(request,'company/Fin_view_payment_received.html',{'allmodules':allmodules,'com':com,'cmp':cmp, 'data':data,'payment':payment})
     else:
        return redirect('/')
 
@@ -18372,7 +18373,957 @@ def Fin_add_payment_received(request):
         
         allmodules = Fin_Modules_List.objects.get(company_id = cmp,status = 'New')
 
+        customer = Fin_Customers.objects.filter(Company = cmp, status = 'Active')
+        tod = datetime.now().strftime('%Y-%m-%d')
+        pTerms = Fin_Company_Payment_Terms.objects.filter(Company = cmp)
+        lst = Fin_Price_List.objects.filter(Company = cmp,type='Sales',status = 'Active')
+        bnk_acnt = Fin_Banking.objects.filter(company = cmp)
 
-        return render(request,'company/Fin_add_payment_received.html',{'allmodules':allmodules,'com':com,'cmp':cmp, 'data':data})
+        latest_pay = Fin_Payment_Received.objects.filter(company = cmp).order_by('-id').first()
+
+        new_number = int(latest_pay.referance_no) + 1 if latest_pay else 1
+
+        if Fin_Payment_Reference.objects.filter(Company = cmp).exists():
+            deleted = Fin_Payment_Reference.objects.get(Company = cmp)
+            
+            if deleted:
+                while int(deleted.reference_no) >= new_number:
+                    new_number+=1
+
+
+
+        nxtInv = ""
+        lastInv = Fin_Payment_Received.objects.filter(company = cmp).last()
+        if lastInv:
+            inv_no = str(lastInv.payment_no)
+            numbers = []
+            stri = []
+            for word in inv_no:
+                if word.isdigit():
+                    numbers.append(word)
+                else:
+                    stri.append(word)
+            
+            num=''
+            for i in numbers:
+                num +=i
+            
+            st = ''
+            for j in stri:
+                st = st+j
+
+            inv_num = int(num)+1
+
+            if num[0] == '0':
+                if inv_num <10:
+                    nxtInv = st+'0'+ str(inv_num)
+                else:
+                    nxtInv = st+ str(inv_num)
+            else:
+                nxtInv = st+ str(inv_num)
+        else:
+            nxtInv = 'PL01'
+
+       
+        
+
+        return render(request,'company/Fin_add_payment_received.html',{'allmodules':allmodules,'com':com,'cmp':cmp, 'data':data,'customer':customer,'tod':tod,'pTerms':pTerms,'list':lst,'next_count':new_number,'nxtInv':nxtInv,'bnk_acnt':bnk_acnt})
+    else:
+       return redirect('/')
+    
+
+def get_payemnt_bankacc_num(request):
+    try:
+        if 's_id' in request.session:
+            s_id = request.session['s_id']
+            data = Fin_Login_Details.objects.get(id=s_id)
+
+            if data.User_Type == "Company":
+                com = Fin_Company_Details.objects.get(Login_Id=s_id)
+                cmp = com
+            else:
+                com = Fin_Staff_Details.objects.get(Login_Id=s_id)
+                cmp = com.company_id
+
+            if request.method == 'POST':
+                bank = Fin_Banking.objects.get(id=request.POST.get('bankId'), company=cmp)
+                return JsonResponse({'status': True, 'accountNumber': bank.account_number})
+            else:
+                return JsonResponse({'status': False, 'error': 'Invalid request method'})
+        else:
+            return JsonResponse({'status': False, 'error': 'Session ID not found'})
+    except Exception as e:
+        print(e)
+        return JsonResponse({'status': False, 'error': str(e)})
+
+def Fin_paymentreceivecustomer(request):
+    if 's_id' in request.session:
+        s_id = request.session['s_id']
+        data = Fin_Login_Details.objects.get(id = s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id = s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id = s_id)
+        
+        custId = request.POST['id']
+        cust = Fin_Customers.objects.get(id = custId)
+
+        if cust:
+            if cust.price_list and cust.price_list.type == 'Sales':
+                list = True
+                listId = cust.price_list.id
+                listName = cust.price_list.name
+            else:
+                list = False
+                listId = None
+                listName = None
+            context = {
+                'status':True, 'id':cust.id, 'email':cust.email, 'gstType':cust.gst_type,'shipState':cust.place_of_supply,'gstin':False if cust.gstin == "" or cust.gstin == None else True, 'gstNo':cust.gstin, 'priceList':list, 'ListId':listId, 'ListName':listName,
+                'street':cust.billing_street, 'city':cust.billing_city, 'state':cust.billing_state, 'country':cust.billing_country, 'pincode':cust.billing_pincode
+            }
+            return JsonResponse(context)
+        else:
+            return JsonResponse({'status':False, 'message':'Something went wrong..!'})
+    else:
+       return redirect('/')
+
+
+def Fin_create_receivepayment_customer(request):
+    if 's_id' in request.session:
+        s_id = request.session['s_id']
+        data = Fin_Login_Details.objects.get(id = s_id)
+        if data.User_Type == 'Company':
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id = s_id).company_id
+
+        fName = request.POST['first_name']
+        lName = request.POST['last_name']
+        gstIn = request.POST['gstin']
+        pan = request.POST['pan_no']
+        email = request.POST['email']
+        phn = request.POST['mobile']
+
+        if Fin_Customers.objects.filter(Company = com, first_name__iexact = fName, last_name__iexact = lName).exists():
+            res = f"Customer `{fName} {lName}` already exists, try another!"
+            return JsonResponse({'status': False, 'message':res})
+        elif gstIn != "" and Fin_Customers.objects.filter(Company = com, gstin__iexact = gstIn).exists():
+            res = f"GSTIN `{gstIn}` already exists, try another!"
+            return JsonResponse({'status': False, 'message':res})
+        elif Fin_Customers.objects.filter(Company = com, pan_no__iexact = pan).exists():
+            res = f"PAN No `{pan}` already exists, try another!"
+            return JsonResponse({'status': False, 'message':res})
+        elif Fin_Customers.objects.filter(Company = com, mobile__iexact = phn).exists():
+            res = f"Phone Number `{phn}` already exists, try another!"
+            return JsonResponse({'status': False, 'message':res})
+        elif Fin_Customers.objects.filter(Company = com, email__iexact = email).exists():
+            res = f"Email `{email}` already exists, try another!"
+            return JsonResponse({'status': False, 'message':res})
+
+        cust = Fin_Customers(
+            Company = com,
+            LoginDetails = data,
+            title = request.POST['title'],
+            first_name = fName,
+            last_name = lName,
+            company = request.POST['company_name'],
+            location = request.POST['location'],
+            place_of_supply = request.POST['place_of_supply'],
+            gst_type = request.POST['gst_type'],
+            gstin = None if request.POST['gst_type'] == "Unregistered Business" or request.POST['gst_type'] == 'Overseas' or request.POST['gst_type'] == 'Consumer' else gstIn,
+            pan_no = pan,
+            email = email,
+            mobile = phn,
+            website = request.POST['website'],
+            price_list = None if request.POST['price_list'] ==  "" else Fin_Price_List.objects.get(id = request.POST['price_list']),
+            payment_terms = None if request.POST['payment_terms'] == "" else Fin_Company_Payment_Terms.objects.get(id = request.POST['payment_terms']),
+            opening_balance = 0 if request.POST['open_balance'] == "" else float(request.POST['open_balance']),
+            open_balance_type = request.POST['balance_type'],
+            current_balance = 0 if request.POST['open_balance'] == "" else float(request.POST['open_balance']),
+            credit_limit = 0 if request.POST['credit_limit'] == "" else float(request.POST['credit_limit']),
+            billing_street = request.POST['street'],
+            billing_city = request.POST['city'],
+            billing_state = request.POST['state'],
+            billing_pincode = request.POST['pincode'],
+            billing_country = request.POST['country'],
+            ship_street = request.POST['shipstreet'],
+            ship_city = request.POST['shipcity'],
+            ship_state = request.POST['shipstate'],
+            ship_pincode = request.POST['shippincode'],
+            ship_country = request.POST['shipcountry'],
+            status = 'Active'
+        )
+        cust.save()
+
+        #save transaction
+
+        Fin_Customers_History.objects.create(
+            Company = com,
+            LoginDetails = data,
+            customer = cust,
+            action = 'Created'
+        )
+
+        return JsonResponse({'status': True})
+    
+    else:
+        return redirect('/')
+
+def Fin_getpaymentreceivecustomers(request):
+    if 's_id' in request.session:
+        s_id = request.session['s_id']
+        data = Fin_Login_Details.objects.get(id = s_id)
+        if data.User_Type == 'Company':
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id = s_id).company_id
+
+        options = {}
+        option_objects = Fin_Customers.objects.filter(Company = com, status = 'Active')
+        for option in option_objects:
+            options[option.id] = [option.id , option.title, option.first_name, option.last_name]
+
+        return JsonResponse(options)
+    else:
+        return redirect('/')
+
+
+def Fin_newCustomerPaymentReceivedTerm(request):
+    if 's_id' in request.session:
+        s_id = request.session['s_id']
+        data = Fin_Login_Details.objects.get(id = s_id)
+        if data.User_Type == 'Company':
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id = s_id).company_id
+
+        term = request.POST['term']
+        days = request.POST['days']
+
+        if not Fin_Company_Payment_Terms.objects.filter(Company = com, term_name__iexact = term).exists():
+            Fin_Company_Payment_Terms.objects.create(Company = com, term_name = term, days =days)
+            
+            list= []
+            terms = Fin_Company_Payment_Terms.objects.filter(Company = com)
+
+            for term in terms:
+                termDict = {
+                    'name': term.term_name,
+                    'id': term.id
+                }
+                list.append(termDict)
+
+            return JsonResponse({'status':True,'terms':list},safe=False)
+        else:
+            return JsonResponse({'status':False})
+
+    else:
+        return redirect('/')
+
+def Fin_check_paymentreceived_CustomerName(request):
+    if 's_id' in request.session:
+        s_id = request.session['s_id']
+        data = Fin_Login_Details.objects.get(id = s_id)
+        if data.User_Type == 'Company':
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id = s_id).company_id
+        
+        fName = request.POST['fname']
+        lName = request.POST['lname']
+
+        if Fin_Customers.objects.filter(Company = com, first_name__iexact = fName, last_name__iexact = lName).exists():
+            msg = f'{fName} {lName} already exists, Try another.!'
+            return JsonResponse({'is_exist':True, 'message':msg})
+        else:
+            return JsonResponse({'is_exist':False})
+    else:
+        return redirect('/')
+    
+def Fin_check_paymentreceived_CustomerGSTIN(request):
+    if 's_id' in request.session:
+        s_id = request.session['s_id']
+        data = Fin_Login_Details.objects.get(id = s_id)
+        if data.User_Type == 'Company':
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id = s_id).company_id
+        
+        gstIn = request.POST['gstin']
+
+        if Fin_Customers.objects.filter(Company = com, gstin__iexact = gstIn).exists():
+            msg = f'{gstIn} already exists, Try another.!'
+            return JsonResponse({'is_exist':True, 'message':msg})
+        else:
+            return JsonResponse({'is_exist':False})
+    else:
+        return redirect('/')
+    
+def Fin_check_paymentreceived_CustomerPAN(request):
+    if 's_id' in request.session:
+        s_id = request.session['s_id']
+        data = Fin_Login_Details.objects.get(id = s_id)
+        if data.User_Type == 'Company':
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id = s_id).company_id
+        
+        pan = request.POST['pan']
+
+        if Fin_Customers.objects.filter(Company = com, pan_no__iexact = pan).exists():
+            msg = f'{pan} already exists, Try another.!'
+            return JsonResponse({'is_exist':True, 'message':msg})
+        else:
+            return JsonResponse({'is_exist':False})
+    else:
+        return redirect('/')
+
+def Fin_check_paymentreceived_CustomerPhone(request):
+    if 's_id' in request.session:
+        s_id = request.session['s_id']
+        data = Fin_Login_Details.objects.get(id = s_id)
+        if data.User_Type == 'Company':
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id = s_id).company_id
+        
+        phn = request.POST['phone']
+
+        if Fin_Customers.objects.filter(Company = com, mobile__iexact = phn).exists():
+            msg = f'{phn} already exists, Try another.!'
+            return JsonResponse({'is_exist':True, 'message':msg})
+        else:
+            return JsonResponse({'is_exist':False})
+    else:
+        return redirect('/')
+
+def Fin_check_paymentreceived_CustomerEmail(request):
+    if 's_id' in request.session:
+        s_id = request.session['s_id']
+        data = Fin_Login_Details.objects.get(id = s_id)
+        if data.User_Type == 'Company':
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id = s_id).company_id
+        
+        email = request.POST['email']
+
+        if Fin_Customers.objects.filter(Company = com, email__iexact = email).exists():
+            msg = f'{email} already exists, Try another.!'
+            return JsonResponse({'is_exist':True, 'message':msg})
+        else:
+            return JsonResponse({'is_exist':False})
+    else:
+        return redirect('/')
+
+
+# def checkPymntNumberConti(request):
+#     try:
+#         temp = re.findall(r'\d+', request.GET['payment_number'])
+#         number = list(map(int, temp))
+#         entry = int(number[0]) - 1
+
+#         message=""
+#         for i in Fin_Payment_Received.objects.all():
+
+#             if Fin_Payment_Received.objects.filter(referance_no = request.GET['payment_number']).exists():
+#                 message="Payment No. already exists..!"
+#                 status = False
+#                 break
+#             else:
+#                 pass
+
+#             if int(re.findall(r'\d+', i.referance_no)[0]) == entry:
+#                 message=""
+#                 status = True
+#                 break
+#             else:
+#                 message="Payment number is not continous..!"
+#                 status = False
+#         # print(number)
+
+#         return JsonResponse({"status":status, "number":number, "message":message})
+
+#     except Exception as e:
+#         print(e)
+#         status = False
+#         message = "Something went wrong..!"
+#         return JsonResponse({"status":status,"message":message})
+
+
+def Fin_Create_Payment_Received(request):
+    if 's_id' in request.session:
+        s_id = request.session['s_id']
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+        bnk_acnt = Fin_Banking.objects.filter(company = com)
+        bank_name_list = [account.bank_name for account in bnk_acnt]
+        if request.method == 'POST':
+
+            payment = Fin_Payment_Received(
+                company=com,
+                logindetails=com.Login_Id,
+                customer=Fin_Customers.objects.get(id=request.POST['customer']),
+                referance_no=request.POST['ref_num'],
+                payment_date=request.POST['paymdate'],
+                payment_no=request.POST['payment_num'],
+                payment_method=None if request.POST['pmethod'] == "" else request.POST['pmethod'],
+                cheque_no= 'NULL' if request.POST['chq_id'] == "" or request.POST['pmethod'] !='Cheque' else request.POST['chq_id'],
+                upi_no='NULL' if request.POST['upiid'] == "" or request.POST['pmethod'] !='UPI' else request.POST['upiid'],
+                bank_no="NULL" if request.POST['bank_acc'] == ""  or request.POST['pmethod'] not in bank_name_list else request.POST['bank_acc'],
+                total_amount=request.POST['tamount'],
+                total_balance=request.POST['tbalance'],
+            )
+
+            payment.save()
+            pdate = tuple(request.POST.getlist("inv_date[]"))
+            pduedate = tuple(request.POST.getlist("duedate[]"))
+            pinvoice_type = tuple(request.POST.getlist("inv_type[]"))
+            pinvoice_no = tuple(request.POST.getlist("trans_no[]"))
+            pinvoice_amount = tuple(request.POST.getlist("inv_amount[]"))
+            pinvoice_payment = tuple(request.POST.getlist("inv_payment[]"))
+            p_invoice_balance = tuple(request.POST.getlist("inv_balance[]"))
+
+            payment_received = Fin_Payment_Received.objects.get(id=payment.id)
+            mapped = []  # Initialize mapped
+            if len(pdate) == len(pduedate) == len(pinvoice_type) == len(pinvoice_no) == len(
+                    pinvoice_amount) == len(pinvoice_payment) == len(p_invoice_balance):
+                mapped = zip(pdate, pduedate, pinvoice_type, pinvoice_no, pinvoice_amount, pinvoice_payment,
+                             p_invoice_balance)
+                mapped = list(mapped)
+            for ele in mapped:
+                Fin_Payment_Invoice.objects.create(pdate=ele[0], pduedate=ele[1], pinvoice_type=ele[2],
+                                                   pinvoice_no=ele[3], pinvoice_amount=ele[4],
+                                                   pinvoice_payment=ele[5], p_invoice_balance=ele[6],
+                                                   payment=payment_received, company=com, logindetails=data)
+
+            tr_history = Fin_Payment_History(
+                Company=com,
+                LoginDetails=data,
+                payment=payment,
+                action='Created'
+            )
+            tr_history.save()
+
+            if 'save_as_draft' in request.POST:
+                payment.status = "Draft"
+            elif "save_as_saved" in request.POST:
+                payment.status = "Saved"
+
+            payment.save()
+
+            return redirect("Fin_view_payment_received")
+        else:
+            return redirect("Fin_view_payment_received")
+    else:
+        return redirect('/')
+
+
+
+def Fin_overview_payment_received(request,id):
+    if 's_id' in request.session:
+        s_id = request.session['s_id']
+        data = Fin_Login_Details.objects.get(id = s_id)
+        if data.User_Type == 'Company':
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id = s_id).company_id
+
+        payment = Fin_Payment_Received.objects.get(id = id)
+        cmt = Fin_Payment_Comments.objects.filter(payment = payment)
+        hist = Fin_Payment_History.objects.filter(payment = payment).last()
+        created = Fin_Payment_History.objects.get(payment = payment, action = 'Created')
+        pinvoice = Fin_Payment_Invoice.objects.filter(payment = payment,company=com)
+        
+        allmodules = Fin_Modules_List.objects.get(company_id = com,status = 'New')
+        
+        return render(request,'company/Fin_overview_payment_received.html',{'allmodules':allmodules,'com':com,'cmp':com, 'data':data,'payment':payment,'cmt':cmt,'hist':hist,'created':created,'pinvoice':pinvoice})
+
+def Fin_convertpaymentsave(request,id):
+    if 's_id' in request.session:
+
+        payment = Fin_Payment_Received.objects.get(id = id)
+        payment.status = 'Saved'
+        payment.save()
+        return redirect(Fin_overview_payment_received, id)
+
+def Fin_payment_received_Comment(request, id):
+    if 's_id' in request.session:
+        s_id = request.session['s_id']
+        data = Fin_Login_Details.objects.get(id=s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id=s_id).company_id
+
+        payment = Fin_Payment_Received.objects.get(id=id)
+        if request.method == "POST":
+            cmt = request.POST.get('comment', '').strip()
+            if cmt:
+                Fin_Payment_Comments.objects.create(Company=com, payment=payment, comments=cmt)
+                return JsonResponse({'success': True, 'message': 'Comment added successfully'})
+            else:
+                return JsonResponse({'success': False, 'message': 'Empty comment'})
+        else:
+            return JsonResponse({'success': False, 'message': 'Invalid request method'})
+    else:
+        return JsonResponse({'success': False, 'message': 'Session not found'})
+
+
+def Fin_deletePaymentComment(request, id):
+    if 's_id' in request.session:
+        try:
+            cmt = Fin_Payment_Comments.objects.get(id=id)
+            pay = cmt.payment.id
+            cmt.delete()
+            return JsonResponse({'success': True, 'payment_id': pay})
+        except Fin_Payment_Comments.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Comment not found'})
+    else:
+        return JsonResponse({'success': False, 'error': 'Session not found'})
+    
+def Fin_Payment_Received_History(request,id):
+    if 's_id' in request.session:
+        s_id = request.session['s_id']
+        data = Fin_Login_Details.objects.get(id = s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id = s_id)
+            allmodules = Fin_Modules_List.objects.get(Login_Id = s_id,status = 'New')
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id = s_id)
+            allmodules = Fin_Modules_List.objects.get(company_id = com.company_id,status = 'New')
+        payment = Fin_Payment_Received.objects.get(id = id)
+        history = Fin_Payment_History.objects.filter(payment = payment,Company=com)
+        
+        return render(request,'company/Fin_Payment_Received_History.html',{'allmodules':allmodules,'com':com,'data':data,'payment':payment, 'history':history})
+    else:
+       return redirect('/')
+    
+
+def Fin_deletePayment(request, id):
+    if 's_id' in request.session:
+        s_id = request.session['s_id']
+        data = Fin_Login_Details.objects.get(id = s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id = s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id = s_id).company_id
+        payment = Fin_Payment_Received.objects.get( id = id)
+        payment_invoice=Fin_Payment_Invoice.objects.filter(payment = payment,company=com)
+
+        if Fin_Payment_Reference.objects.filter(Company = com).exists():
+            deleted = Fin_Payment_Reference.objects.get(Company = com)
+            if int(payment.referance_no) > int(deleted.reference_no):
+                deleted.reference_no = payment.referance_no
+                deleted.save()
+        else:
+            Fin_Payment_Reference.objects.create(Company = com, reference_no = payment.referance_no,LoginDetails=data)
+        
+        payment.delete()
+        payment_invoice.delete()
+        return redirect(Fin_view_payment_received)
+
+# def Fin_invoicePdf(request,id):
+#     if 's_id' in request.session:
+#         s_id = request.session['s_id']
+#         data = Fin_Login_Details.objects.get(id = s_id)
+#         if data.User_Type == 'Company':
+#             com = Fin_Company_Details.objects.get(Login_Id=s_id)
+#         else:
+#             com = Fin_Staff_Details.objects.get(Login_Id = s_id).company_id
+        
+#         inv = Fin_Invoice.objects.get(id = id)
+#         itms = Fin_Invoice_Items.objects.filter(Invoice = inv)
+    
+#         context = {'invoice':inv, 'invItems':itms,'cmp':com}
+        
+#         template_path = 'company/Fin_Invoice_Pdf.html'
+#         fname = 'Invoice_'+inv.invoice_no
+#         # return render(request, 'company/Fin_Invoice_Pdf.html',context)
+#         # Create a Django response object, and specify content_type as pdftemp_
+#         response = HttpResponse(content_type='application/pdf')
+#         response['Content-Disposition'] =f'attachment; filename = {fname}.pdf'
+#         # find the template and render it.
+#         template = get_template(template_path)
+#         html = template.render(context)
+
+#         # create a pdf
+#         pisa_status = pisa.CreatePDF(
+#         html, dest=response)
+#         # if error then show some funny view
+#         if pisa_status.err:
+#             return HttpResponse('We had some errors <pre>' + html + '</pre>')
+#         return response
+#     else:
+#         return redirect('/')
+
+# def Fin_sharePaymentToEmail(request,id):
+#     if 's_id' in request.session:
+#         s_id = request.session['s_id']
+#         data = Fin_Login_Details.objects.get(id = s_id)
+#         if data.User_Type == 'Company':
+#             com = Fin_Company_Details.objects.get(Login_Id=s_id)
+#         else:
+#             com = Fin_Staff_Details.objects.get(Login_Id = s_id).company_id
+        
+#         payment = Fin_Payment_Received.objects.get(id = id)
+#         try:
+#             if request.method == 'POST':
+#                 emails_string = request.POST['email_ids']
+
+#                 # Split the string by commas and remove any leading or trailing whitespace
+#                 emails_list = [email.strip() for email in emails_string.split(',')]
+#                 email_message = request.POST['email_message']
+#                 # print(emails_list)
+            
+#                 context = {'payment':payment, 'cmp':com}
+#                 template_path = 'company/Fin_payment_mailfile.html'
+#                 template = get_template(template_path)
+
+#                 html  = template.render(context)
+#                 result = BytesIO()
+#                 pdf = pisa.pisaDocument(BytesIO(html.encode("ISO-8859-1")), result)
+#                 pdf = result.getvalue()
+#                 filename = f'payment{payment.payment_no}'
+#                 subject = f"payment{payment.payment_no}"
+#                 email = EmailMessage(subject, f"Hi,\nPlease find the attached payment for - PAYMENT-{payment.payment_no}. \n{email_message}\n\n--\nRegards,\n{com.Company_name}\n{com.Address}\n{com.State} - {com.Country}\n{com.Contact}", from_email=settings.EMAIL_HOST_USER, to=emails_list)
+#                 email.attach(filename, pdf, "application/pdf")
+#                 email.send(fail_silently=False)
+
+#                 messages.success(request, 'Payment details has been shared via email successfully..!')
+#                 return redirect(Fin_overview_payment_received,id)
+#         except Exception as e:
+#             print(e)
+#             messages.error(request, f'{e}')
+#             return redirect(Fin_overview_payment_received, id)
+
+
+import base64
+from django.core.files.base import ContentFile 
+from django.core.mail import EmailMultiAlternatives
+
+def Fin_sharePaymentToEmail(request,id):
+
+    if request.method == 'POST':
+        if 's_id' in request.session:
+            s_id = request.session['s_id']
+            data = Fin_Login_Details.objects.get(id = s_id)
+        if data.User_Type == 'Company':
+            com = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id = s_id).company_id
+        fromdate = request.POST['FromD']
+        todate = request.POST['ToD']
+        emails_string = request.POST['email_ids']
+        if fromdate == '' and todate == '' :
+            data = Fin_Payment_Received.objects.filter(company=com)
+            print(data,'data 1')
+        else:
+            data = Fin_Payment_Received.objects.filter(company=com,start_date__gte=fromdate, start_date__lte=todate)
+            print(data,'data 2')
+
+
+        payment=Fin_Payment_Received.objects.filter(id=id)
+        pid=''
+        for p in payment:
+            pid =p.id
+        
+
+        emails_list = [email.strip() for email in emails_string.split(',')]
+        email_message = request.POST['email_message']
+
+        pdf_data = request.POST.get('pdf_data')
+        pdf_binary = base64.b64decode(pdf_data)
+        pdf_file = ContentFile(pdf_binary, name='Payment.pdf')
+                
+        filename = f'PaymentReceived-{com.Company_name}.pdf'
+        subject = f"PaymentReceived_details - {com.Company_name}"
+        email_message = request.POST.get('email_message', '') 
+
+            
+        emails_list = request.POST.get('email_ids', '').split(',')
+
+            
+        email = EmailMultiAlternatives(
+                subject,
+                f"Hi, \n{email_message} -of -{com.Company_name}. ",
+                from_email=settings.EMAIL_HOST_USER,
+                to=emails_list
+        )
+
+            
+        email.attach(filename, pdf_file.read(), "application/pdf")
+        email.send(fail_silently=False)
+
+        # messages.success(request, 'Report has been shared via email successfully..!')
+        print('jso')
+        return JsonResponse({'message':''})
+    else:        
+        return JsonResponse({'message':''})
+
+
+# def fetch_invoice_data(request):
+#     if request.method == 'POST' and request.is_ajax():
+#         customer_id = request.POST.get('customerId')
+#         invoices = Fin_Invoice.objects.filter(customer_id=customer_id)
+#         invoice_data = [{'number': invoice.invoice_no, 'date': invoice.invoice_date} for invoice in invoices]
+#         return JsonResponse({'invoices': invoice_data})
+#     else:
+#         return JsonResponse({'error': 'Invalid request'})
+
+import json
+def fetch_invoice_data(request):
+    if request.method == 'POST':
+        if 's_id' in request.session:
+            s_id = request.session['s_id']
+            data = Fin_Login_Details.objects.get(id = s_id)
+        if data.User_Type == 'Company':
+            cmp1 = Fin_Company_Details.objects.get(Login_Id=s_id)
+        else:
+            cmp1 = Fin_Staff_Details.objects.get(Login_Id = s_id).company_id
+        id = request.POST['customer']
+        # cId = request.POST['custId']
+        # print(cId)
+        # x = cId.split()
+        # x.append(" ")
+        # a = x[0]
+        # b = x[1]
+        # if x[2] is not None:
+        #     b = x[1] + " " + x[2]
+        # print(a)
+        # print(b)
+        cstmr = Fin_Customers.objects.get(id = id, Company = cmp1)
+        c_name = str(cstmr.id)
+        c_name1 = str(cstmr.id)
+
+        # custobject = Fin_Customers.objects.values().filter(first_name=a, last_name=b, Company=cmp1)
+        # invitems = invoice.objects.values().filter(customername=id ,cid =cmp1,status='Approved')
+        paymentList = []
+
+        custopenblan = Fin_Customers.objects.get(id=id,Company =cmp1)
+        
+        if custopenblan.opening_balance > 0:
+            try:
+                cust1 = Fin_Customers.objects.get(id=id,Company =cmp1)
+                dict = {
+                    'date':cust1.date.strftime('%m/%d/%Y'),'inv_type':'Opening Balance','trans_no':'','inv_amount':cust1.opening_balance,'inv_balance':i.opening_balance
+                }
+                paymentList.append(dict)
+                date = cust1.date
+                opb = cust1.opening_balance
+                
+                obdue = cust1.open_balance_type
+
+            except:
+                cust1 = Fin_Customers.objects.get(id=id,Company =cmp1)
+                dict = {
+                    'date':cust1.date.strftime('%m/%d/%Y'),'inv_type':'Opening Balance','trans_no':'','inv_amount':cust1.opening_balance,'inv_balance':cust1.opening_balance
+                }
+                paymentList.append(dict)
+                date = cust1.date
+                opb = cust1.opening_balance
+                
+                obdue = cust1.opening_balance_due
+        
+        
+        invitems = Fin_Invoice.objects.filter(Customer=c_name ,Company =cmp1,status='Saved')
+        for i in invitems:
+            dict = {
+                    'date':i.invoice_date.strftime('%m/%d/%Y'),'inv_type':'Invoice','trans_no':i.invoice_no,'inv_amount':i.grandtotal,'inv_payment':i.paid_off,'inv_balance':i.balance
+            }
+            paymentList.append(dict)
+        
+
+        recinvitesm = Fin_Recurring_Invoice.objects.filter(Customer=c_name ,Company =cmp1)
+        for i in recinvitesm:
+            dict = {
+                    'date':i.start_date.strftime('%m/%d/%Y'),'inv_type':'Recurring Invoice','trans_no':i.rec_invoice_no,'inv_amount':i.grandtotal,'inv_payment':i.paid_off,'inv_balance':i.balance
+            }
+            paymentList.append(dict)
+
+        creditnote = Fin_CreditNote.objects.filter(Customer=c_name ,Company =cmp1)
+        for i in creditnote:
+            dict = {
+                    'date':i.creditnote_date.strftime('%m/%d/%Y'),'inv_type':'Credit Note','trans_no':i.creditnote_number,'inv_amount':i.grandtotal,'inv_payment':i.paid,'inv_balance':i.balance
+            }
+            paymentList.append(dict)
+
+        x_data = list(invitems)
+        
+ 
+        # return JsonResponse({"status":" not","invitem":x_data,"ct":ct,'date':date,'opb':opb,'obdue':obdue,})
+        return JsonResponse(json.dumps(paymentList),content_type="application/json", safe=False)
+
+def Fin_edit_payment_received(request,id):
+    if 's_id' in request.session:
+        s_id = request.session['s_id']
+        data = Fin_Login_Details.objects.get(id = s_id)
+
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id = s_id)
+            cmp = com
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id = s_id)
+            cmp = com.company_id
+        
+        allmodules = Fin_Modules_List.objects.get(company_id = cmp,status = 'New')
+        payment = Fin_Payment_Received.objects.get(id=id)
+        customer = Fin_Customers.objects.filter(Company = cmp, status = 'Active')
+        pTerms = Fin_Company_Payment_Terms.objects.filter(Company = cmp)
+        lst = Fin_Price_List.objects.filter(Company = cmp,type='Sales',status = 'Active')
+        bnk_acnt = Fin_Banking.objects.filter(company = cmp)
+        payemnt_invoice = Fin_Payment_Invoice.objects.filter(payment=payment,company = cmp)
+
+        return render(request,'company/Fin_edit_payment_received.html',{'allmodules':allmodules,'com':com,'cmp':cmp, 'data':data,'customer':customer,'pTerms':pTerms,'list':lst,'payment':payment,'bnk_acnt':bnk_acnt,'payemnt_invoice':payemnt_invoice})
+    else:
+       return redirect('/')
+
+
+def Fin_Update_Payment_Received(request,id):
+    if 's_id' in request.session:
+        s_id = request.session['s_id']
+        data = Fin_Login_Details.objects.get(id = s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id = s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id = s_id).company_id
+        payment=Fin_Payment_Received.objects.get(id=id)
+        bnk_acnt = Fin_Banking.objects.filter(company = com)
+        bank_name_list = [account.bank_name for account in bnk_acnt]
+        if request.method == 'POST':
+
+            payment.customer = Fin_Customers.objects.get(id = request.POST['customer'])
+            # customer_email = request.POST['customerEmail'],
+            # billing_address = request.POST['bill_address'],
+            # gst_treatment = request.POST['gst_treatment'],
+            # gstin = request.POST['gstin'],
+            payment.referance_no = request.POST['ref_num']
+            payment.payment_date = str(request.POST['paymdate'])
+            payment.payment_no = request.POST['payment_num']
+            payment.payment_method = None if request.POST['pmethod'] == "" else request.POST['pmethod']
+            # payment.cheque_no = None if request.POST['chq_id'] == "" or request.POST['pmethod'] !='Cheque' else request.POST['chq_id']
+            if request.POST['chq_id'] == "" or request.POST['pmethod'] !='Cheque':
+                payment.cheque_no = 'NULL'
+            else:
+                payment.cheque_no = request.POST['chq_id']
+            # payment.upi_no = None if request.POST['upiid'] == "" or request.POST['pmethod'] !='UPI':
+            if request.POST['upiid'] == "" or request.POST['pmethod'] !='UPI':
+                payment.upi_no = 'NULL'
+            else:
+                payment.upi_no = request.POST['upiid']
+            if request.POST['bank_acc'] == "" or request.POST['pmethod'] not in bank_name_list:
+                payment.bank_no = 'NULL'
+            else:
+                payment.bank_no = request.POST['bank_acc']
+            Fin_Payment_Invoice.objects.filter(payment=payment,company=com).delete()
+
+            payment.save()
+
+            pdate =  tuple(request.POST.getlist("inv_date[]"))
+            pduedate =  tuple(request.POST.getlist("duedate[]"))
+            pinvoice_type =  tuple(request.POST.getlist("inv_type[]"))
+            pinvoice_no =  tuple(request.POST.getlist("trans_no[]"))
+            pinvoice_amount =  tuple(request.POST.getlist("inv_amount[]"))
+            pinvoice_payment =  tuple(request.POST.getlist("inv_payment[]"))
+            p_invoice_balance =  tuple(request.POST.getlist("inv_balance[]"))
+
+            payment_received = Fin_Payment_Received.objects.get(id=payment.id)
+            mapped = []  # Initialize mapped
+            if len(pdate)==len(pduedate)==len(pinvoice_type)==len(pinvoice_no)==len(pinvoice_amount)==len(pinvoice_payment)==len(p_invoice_balance):
+                mapped=zip(pdate, pduedate, pinvoice_type, pinvoice_no, pinvoice_amount, pinvoice_payment, p_invoice_balance)
+                mapped=list(mapped)
+            for ele in mapped:
+                Fin_Payment_Invoice.objects.create(pdate=ele[0], pduedate=ele[1], pinvoice_type=ele[2], pinvoice_no=ele[3], pinvoice_amount=ele[4], pinvoice_payment=ele[5], p_invoice_balance=ele[6], payment=payment_received, company=com,logindetails=data)
+
+            tr_history=Fin_Payment_History(
+                                            Company = com,
+                                            LoginDetails = data,
+                                            payment = payment,
+                                            action = 'Updated'
+                                        )
+            tr_history.save() 
+           
+            return redirect(Fin_overview_payment_received,id)
+        else:
+            return redirect(Fin_overview_payment_received,id)
+    else:
+       return redirect('/')
+
+
+def payment_add_file(request,id):
+    if 's_id' in request.session:
+        s_id = request.session['s_id']
+        data = Fin_Login_Details.objects.get(id = s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id = s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id = s_id).company_id    
+        
+        payment = Fin_Payment_Received.objects.get(id=id,company=com)
+
+    if request.method == 'POST':
+        
+        if len(request.FILES) != 0:
+           
+            if payment.file != "default.jpg":
+                 os.remove(payment.file.path)
+                
+            payment.file=request.FILES['file']
+        
+        payment.save()
+        return redirect('Fin_overview_payment_received',id)
+
+
+    
+def Fin_checkpaymentNumber(request):
+    if 's_id' in request.session:
+        s_id = request.session['s_id']
+        data = Fin_Login_Details.objects.get(id = s_id)
+        if data.User_Type == "Company":
+            com = Fin_Company_Details.objects.get(Login_Id = s_id)
+        else:
+            com = Fin_Staff_Details.objects.get(Login_Id = s_id).company_id
+        
+        invNo = request.GET['payment_num']
+
+        nxtInv = ""
+        lastInv = Fin_Payment_Received.objects.filter(company = com).last()
+        if lastInv:
+            inv_no = str(lastInv.payment_no)
+            numbers = []
+            stri = []
+            for word in inv_no:
+                if word.isdigit():
+                    numbers.append(word)
+                else:
+                    stri.append(word)
+            
+            num=''
+            for i in numbers:
+                num +=i
+            
+            st = ''
+            for j in stri:
+                st = st+j
+
+            inv_num = int(num)+1
+
+            if num[0] == '0':
+                if inv_num <10:
+                    nxtInv = st+'0'+ str(inv_num)
+                else:
+                    nxtInv = st+ str(inv_num)
+            else:
+                nxtInv = st+ str(inv_num)
+
+        if Fin_Payment_Received.objects.filter(company = com, payment_no__iexact = invNo).exists():
+            return JsonResponse({'status':False, 'message':'Payment No already Exists.!'})
+        elif nxtInv != "" and invNo != nxtInv:
+            return JsonResponse({'status':False, 'message':'Payment No is not continuous.!'})
+        else:
+            return JsonResponse({'status':True, 'message':'Number is okay.!'})
     else:
        return redirect('/')

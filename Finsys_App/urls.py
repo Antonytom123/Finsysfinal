@@ -267,7 +267,7 @@ urlpatterns = [
     path('Fin_delete_invoice_comment/<int:id>',views.Fin_deleteInvoiceComment, name='Fin_deleteInvoiceComment'),
     path('Fin_invoice_history/<int:id>',views.Fin_invoiceHistory, name='Fin_invoiceHistory'),
     path('Fin_delete_invoice/<int:id>',views.Fin_deleteInvoice, name= 'Fin_deleteInvoice'),
-    path('Fin_invoicePdf/<int:id>',views.Fin_invoicePdf, name='Fin_invoicePdf'),
+    # path('Fin_invoicePdf/<int:id>',views.Fin_invoicePdf, name='Fin_invoicePdf'),
     path('Fin_share_invoice_to_email/<int:id>',views.Fin_shareInvoiceToEmail, name='Fin_shareInvoiceToEmail'),
     path('Fin_create_invoice_customer',views.Fin_createInvoiceCustomer, name='Fin_createInvoiceCustomer'),
     path('Fin_get_customers',views.Fin_getCustomers, name='Fin_getCustomers'),
@@ -567,6 +567,33 @@ urlpatterns = [
     # ...............Payement Recevied.........................
     path('Fin_view_payment_received',views.Fin_view_payment_received,name='Fin_view_payment_received'),
     path('Fin_add_payment_received',views.Fin_add_payment_received,name='Fin_add_payment_received'),
+    path('Fin_paymentreceivecustomer',views.Fin_paymentreceivecustomer,name='Fin_paymentreceivecustomer'),
+    path('Fin_create_receivepayment_customer',views.Fin_create_receivepayment_customer,name='Fin_create_receivepayment_customer'),
+    path('Fin_getpaymentreceivecustomers',views.Fin_getpaymentreceivecustomers,name='Fin_getpaymentreceivecustomers'),
+    path('Fin_newCustomerPaymentReceivedTerm',views.Fin_newCustomerPaymentReceivedTerm,name='Fin_newCustomerPaymentReceivedTerm'),
+    path('Fin_check_paymentreceived_CustomerName',views.Fin_check_paymentreceived_CustomerName,name='Fin_check_paymentreceived_CustomerName'),
+    path('Fin_check_paymentreceived_CustomerGSTIN',views.Fin_check_paymentreceived_CustomerGSTIN,name='Fin_check_paymentreceived_CustomerGSTIN'),
+    path('Fin_check_paymentreceived_CustomerPAN',views.Fin_check_paymentreceived_CustomerPAN,name='Fin_check_paymentreceived_CustomerPAN'),
+    path('Fin_check_paymentreceived_CustomerPhone',views.Fin_check_paymentreceived_CustomerPhone,name='Fin_check_paymentreceived_CustomerPhone'),
+    path('Fin_check_paymentreceived_CustomerEmail',views.Fin_check_paymentreceived_CustomerEmail,name='Fin_check_paymentreceived_CustomerEmail'),
+    # path('checkPymntNumberConti',views.checkPymntNumberConti,name='checkPymntNumberConti'),
+    path('Fin_Create_Payment_Received',views.Fin_Create_Payment_Received,name='Fin_Create_Payment_Received'),
+    path('Fin_overview_payment_received/<int:id>',views.Fin_overview_payment_received,name='Fin_overview_payment_received'),
+    path('Fin_Payment_Received_History/<int:id>',views.Fin_Payment_Received_History,name='Fin_Payment_Received_History'),
+    path('Fin_payment_received_Comment/<int:id>',views.Fin_payment_received_Comment,name='Fin_payment_received_Comment'),
+    path('Fin_deletePaymentComment/<int:id>',views.Fin_deletePaymentComment,name='Fin_deletePaymentComment'),
+    path('Fin_deletePayment/<int:id>',views.Fin_deletePayment,name='Fin_deletePayment'),
+    path('Fin_convertpaymentsave/<int:id>',views.Fin_convertpaymentsave,name='Fin_convertpaymentsave'),
+    path('Fin_sharePaymentToEmail/<int:id>',views.Fin_sharePaymentToEmail,name='Fin_sharePaymentToEmail'),
+    path('fetch_invoice_data',views.fetch_invoice_data,name='fetch_invoice_data'),
+    path('get_payemnt_bankacc_num',views.get_payemnt_bankacc_num,name='get_payemnt_bankacc_num'),
+    path('Fin_edit_payment_received/<int:id>',views.Fin_edit_payment_received,name='Fin_edit_payment_received'),
+    path('Fin_Update_Payment_Received/<int:id>',views.Fin_Update_Payment_Received,name='Fin_Update_Payment_Received'),
+    path('payment_add_file/<int:id>',views.payment_add_file,name='payment_add_file'),
+    path('Fin_checkpaymentNumber',views.Fin_checkpaymentNumber,name='Fin_checkpaymentNumber'),
+
+
+
 
 
     
