@@ -22,7 +22,7 @@
                 <hr/>
             </div>
         </div>
-        <form action="{% url 'Fin_Create_Payment_Received' %}" novalidate method="post" onsubmit="return validateForm()">
+        <form action="{% url 'Fin_Update_Payment_Received' payment.id %}" novalidate method="post">
             {% csrf_token %}
             <div class="card radius-15">
                 <div class="card-body">
@@ -36,34 +36,36 @@
                             </div> -->
                         </header>
                         <div class="row mt-5">
-                            <div class="col-md-4 mt-3">
-                                <label class="">Select Customer</label><span class="text-danger ml-3" id="custErr"></span>
+                            <div class="col-md-4 mt-5">
                                 <div class="d-flex">
                                     <select name="customer" id="customer" class="form-control" required>
-                                        <option value="0" >Select Customer</option>
+                                        <option value="{{payment.customer.id}}"   selected >{{ payment.customer.title }} {{ payment.customer.first_name }} {{ payment.customer.last_name }}</option>
                                         {% for cust in customer %}
-                                        <option text="{{ cust.first_name }} {{ cust.last_name }}" value="{{ cust.id }}" > {{ cust.title }} {{ cust.first_name }} {{ cust.last_name }}</option>
+                                        <option  value="{{ cust.id }}" > {{ cust.title }} {{ cust.first_name }} {{ cust.last_name }}</option>
                                         {% endfor %}
                                     </select>
                                     <button type="button" data-toggle="modal" data-target="#newCustomer" class="btn btn-outline-secondary ml-1">+</button>
                                 </div>
             
                                 <label class="mt-4">GST Treatment</label>
-                                <input type="text" class="form-control" id="gstType" name="gst_treatment" placeholder="GST Treatment" style="background-color: #43596c;" readonly>
+                                <input type="text" class="form-control" id="gstType" name="gst_treatment" value="{{ payment.customer.gst_type }}" placeholder="GST Treatment" style="background-color: #43596c;" readonly>
                             </div>
             
                             <div class="col-md-4 mt-3">
                                 <label class="">Email</label>
-                                <input class="form-control" type="email" name="customerEmail" placeholder="Email" style="background-color: #43596c; color: white;" id="customerEmail" readonly>
+                                <input class="form-control" type="email" name="customerEmail" value="{{ payment.customer.email }}" placeholder="Email" style="background-color: #43596c; color: white;" id="customerEmail" readonly>
                                 <div class="mt-4" id="gstInDisplay" style="display: block;">
                                     <label class="">GST Number</label>
-                                    <input type="text" class="form-control" id="gstin" name="gstin" placeholder="GSTIN" style="background-color: #43596c;" readonly>
+                                    <input type="text" class="form-control" id="gstin" name="gstin" value="{{ payment.customer.gstin }}"  placeholder="GSTIN" style="background-color: #43596c;" readonly>
                                 </div>
                             </div>
             
                             <div class="col-md-4 mt-3">
                                 <label class="">Billing Address</label>
-                                <textarea class="form-control" name="bill_address" id="billAddress" rows="4" style="background-color: #43596c; color: white;" readonly></textarea>
+                                <textarea class="form-control" name="bill_address" id="billAddress"  rows="4" style="background-color: #43596c; color: white;" readonly>{{ payment.customer.billing_street }}
+{{ payment.customer.billing_city }}
+{{ payment.customer.billing_state }}
+{{ payment.customer.billing_country }}</textarea>
                             </div>
                         </div>
             
@@ -71,17 +73,18 @@
                         <div class="row">
                             <div class="col-md-4 mt-3">
                                 <label class="col-form-label">Payment Date</label>
-                                <input type="date" name="paymdate" value="{{ tod }}" class="form-control">
+                                <input type="date" name="paymdate" value="{{ payment.payment_date|date:'Y-m-d' }}" class="form-control">
                             </div>
-                            <div class="col-md-4 mt-3"> 
+                            <div class="col-md-4 mt-3">
                                 <label class="col-form-label">Payment No</label><span class="text-danger ml-1" id="PaymentNoErr"></span>
-                                <input type="text" name="payment_num" id="payment_number"  placeholder="{{nxtInv}}" class="form-control" required>
+                                <input type="text" name="payment_num" id="payment_number" value="{{ payment.payment_no }}" class="form-control">
+                                <span id="payment_warning" class="text-danger"></span>
                             </div>
                             
 
                             <div class=" col-md-4 mt-3">
                                 <label class="scol-form-label">Referance Number</label>
-                                <input type="text" name="ref_num" id="ref_num" value="{{ next_count }}" readonly class="form-control" placeholder="Referance Number">
+                                <input type="text" name="ref_num" id="ref_num" value="{{ payment.referance_no }}" readonly class="form-control" placeholder="Referance Number">
                             </div>
                             <div class="col-md-4 mt-3"></div>
                         </div>
@@ -91,8 +94,8 @@
                                 <label class="col-form-label">Payment Method</label>
                                 <div class="d-flex">
                                     <select name="pmethod" id="paymeth" onclick="showinp('newmethod', this)"class="form-control">
-                                        <option value="NILL" >Choose Payment Method</option>
-                                        
+                                        <option value="{{payment.payment_method}}" selected >{{payment.payment_method}}</option>
+                                       
                                         <option value="Cash">Cash</option>
                                         <option value="Cheque">Cheque</option>
                                         <option value="UPI">UPI</option>
@@ -108,20 +111,43 @@
                                 </div>
                             </div>
                             <div class="col-md-4 mt-3">
-                                <div class="d-none pymnt-methd-inp" id="bank-field" style="flex-direction: column;">
+                                {% if payment.bank_no != 'NULL' %}
+                                <div class="pymnt-methd-inp" id="bank-field" style=" flex-direction: column;">
                                     <label class="scol-form-label">Account #</label>
-                                    <input type="text" name="bank_acc" id="bankacc_inp" class="form-control" placeholder="Account #">
+                                    <input type="text" name="bank_acc" id="bankacc_inp" value="{{ payment.bank_no }}" class="form-control" placeholder="Account #" readonly>
                                 </div>
-                                <div class="d-none pymnt-methd-inp" id="cheq-field" style="flex-direction: column;">
+                                {% else %}
+                                <div class="pymnt-methd-inp" id="bank-field" style="display: none; flex-direction: column;">
+                                    <label class="scol-form-label">Account #</label>
+                                    <input type="text" name="bank_acc" id="bankacc_inp" value="{{ payment.bank_no }}" class="form-control" placeholder="Account #" readonly>
+                                </div>
+                                {% endif %}
+                                
+                                {% if payment.cheque_no != 'NULL' %}
+                                <div class="pymnt-methd-inp" id="cheq-field" style=" flex-direction: column;">
                                     <label class="scol-form-label">Cheque ID</label>
-                                    <input type="text" name="chq_id" id="chequeid_inp" class="form-control" placeholder="Cheque ID">
+                                    <input type="text" name="chq_id" id="chequeid_inp" value="{{ payment.cheque_no }}" class="form-control" placeholder="Cheque ID" >
                                 </div>
-                            
-                                <div class="d-none pymnt-methd-inp" id="upi-field" style="flex-direction: column;">
+                                {% else %}
+                                <div class="pymnt-methd-inp" id="cheq-field" style="display: none;  flex-direction: column;">
+                                    <label class="scol-form-label">Cheque ID</label>
+                                    <input type="text" name="chq_id" id="chequeid_inp" value="{{ payment.cheque_no }}" class="form-control" placeholder="Cheque ID" >
+                                </div>
+                                {% endif %}
+                                
+                                {% if payment.upi_no != 'NULL'%}
+                                <div class="pymnt-methd-inp" id="upi-field" style=" flex-direction: column;">
                                     <label class="scol-form-label">UPI ID</label>
-                                    <input type="text" name="upiid" id="upi_inp" class="form-control" placeholder="UPI ID">
+                                    <input type="text" name="upiid" id="upi_inp" value="{{ payment.upi_no }}" class="form-control" placeholder="UPI ID" >
                                 </div>
+                                {% else %}
+                                <div class="pymnt-methd-inp" id="upi-field" style=" display: none; flex-direction: column;">
+                                    <label class="scol-form-label">UPI ID</label>
+                                    <input type="text" name="upiid" id="upi_inp" value="{{ payment.upi_no }}" class="form-control" placeholder="UPI ID">
+                                </div>
+                                {% endif %}
                             </div>
+                            
                             <div class="col-md-4">
                                
                             </div>
@@ -153,6 +179,19 @@
                                        
                                     </tbody> -->
                                     <tbody id='invoicedata'>
+                                        {% for  i in payemnt_invoice %}
+
+                                        <tr 'addr{{forloop.counter}}'>
+                                            <td>{{forloop.counter}}</td>
+                                            <td style="position: relative;"><input type="text" readonly name="inv_date[]" id="" value="{{i.pdate | date:'Y-m-d' }}" class="form-control"/>  </td>
+                                            <td><input type="text" readonly name='duedate[]' id="" value="{{i.pduedate| date:'Y-m-d' }}" class="form-control"/></td>
+                                            <td><input type="text" readonly name='inv_type[]' id="" value="{{i.pinvoice_type}}" class="form-control"/></td>                                
+                                            <td><input type="text" readonly name='trans_no[]' value="{{i.pinvoice_no}}" id="" class="form-control"/></td>
+                                            <td><input type="number" readonly name='inv_amount[]' id="" value="{{i.pinvoice_amount}}" class="form-control"/></td>
+                                            <td><input type="number" readonly name='inv_payment[]' id="" value="{{i.pinvoice_payment}}" class="form-control"/></td>
+                                            <td><input type="number" readonly name='inv_balance[]' id="inv_balance${parseInt(key) + 1}" value="{{i.p_invoice_balance}}" class="form-control"/></td>
+                                        </tr>
+                                        {% endfor %}
                                        
                                     </tbody>
                                 </table>
@@ -166,33 +205,35 @@
                                     <tbody>
                                     <tr>
                                         <th class="text-center">Total Amount</th>
-                                        <td class="text-center"><input type="number" name='tamount' id="tamount" min="0" step="any" placeholder='0.00' class="form-control" readonly></td>
+                                        <td class="text-center"><input type="number" name='tamount' id="tamount" value="{{payment.total_amount}}" min="0" step="any" placeholder='0.00' class="form-control" readonly></td>
                                     </tr>
                                     <tr>
                                         <th class="text-center">Total Balance</th>
-                                        <td class="text-center"><input type="number" min="0" step="any" name='tbalance' id="tbalance" placeholder='0.00' class="form-control" readonly></td>
+                                        <td class="text-center"><input type="number" min="0" step="any" name='tbalance' id="tbalance" value="{{payment.total_balance}}" placeholder='0.00' class="form-control" readonly></td>
                                     </tr>
                                     </tbody>
                                 </table>
                             </div>
                         </div>
-             
 
-                            <div class="row">
-                                <div class="col-md-7 mt-3">
-                                    <div class="notices">
-                                        <div class="text-muted">NOTICE:</div>
-                                        <div class="notice text-muted">
-                                            Fin sYs Terms and Conditions Apply
-                                        </div>
+
+                        <div class="row">
+                            <div class="col-md-7 mt-3">
+                                <div class="notices">
+                                    <div class="text-muted">NOTICE:</div>
+                                    <div class="notice text-muted">
+                                        Fin sYs Terms and Conditions Apply
                                     </div>
                                 </div>
-                                <div class="col-md-5 mt-3 d-flex">
-                                    <input type="button" class="btn btn-outline-secondary w-50 ml-1 text-light" value="Cancel" onclick="window.location.reload();">
-                                    <input type="submit" class="btn btn-outline-secondary w-50 ml-1 text-light" name="save_as_draft" value="Draft">
-                                    <input type="submit" class="btn btn-outline-secondary w-50 ml-1 text-light" name="save_as_saved" value="Save">
-                                </div>
-                                
+                            </div>
+                            <div class="col-md-5 mt-3 d-flex">
+                                <input type="button" class="btn btn-outline-secondary w-50 ml-1 text-light" value="Cancel" onclick="window.location.reload();">
+                                <input type="submit" class="btn btn-outline-secondary w-50 ml-1 text-light" name="save_as_saved" value="Save">
+                            </div>
+                            
+                        </div>
+             
+                      
                     </div>
                 </div>
             </div>
@@ -739,27 +780,6 @@
     </script>
 
     <script>
-        $(document).on('keyup', '#payment_number', function() {
-            $('#PaymentNoErr').text('');
-            var inv_num = $(this).val();
-            if (inv_num != "") {
-                console.log(inv_num);
-                $.ajax({
-                    type: "GET",
-                    url: "{% url 'Fin_checkpaymentNumber' %}",
-                    data: {
-                        payment_num: inv_num, // Correct parameter name
-                    },
-                    success: function(response) {
-                        if (response.status) {
-                            $('#PaymentNoErr').text('');
-                        } else {
-                            $('#PaymentNoErr').text(response.message);
-                        }
-                    }
-                })
-            }
-        });
 
         $(document).ready(function() {
             $("#custGstType").change(function() {
@@ -1017,28 +1037,8 @@
             }
         }
     
-        function validateForm() {
-        var cust = $('#customer').val();
-        var pay = $('#paymeth').val();
-        var paynum = $('#payment_number').val();
-        
-        if(cust == 0){
-            alert('Select Customer..')
-            return false;
-        }
-        if(paynum == ''){
-            alert('Enter Payment Number..')
-            return false;
-        }
-        if(pay == 'NILL'){
-            alert('Select Payment Method..')
-            return false;
-        }
-      
-    }
 
 
-    
         $(document).on("click", "#newCustomerSave", function(){
             var fName = $('#firstName').val();
             var lName = $('#lastName').val();
@@ -1181,7 +1181,7 @@
         });
     </script>
 
-    <script>
+    {% comment %} <script>
         document.getElementById("payment_num").addEventListener("input", function() {
             var paymentNum = this.value.trim();
             var lastNum = parseInt("{{ next_payment_number }}");
@@ -1193,7 +1193,7 @@
                 document.getElementById("payment_warning").innerText = "";
             }
         });
-    </script>
+    </script> {% endcomment %}
 
     <script>
         function showinp(divId, element) {
@@ -1336,31 +1336,33 @@
             }
             });
         });
+
+        
     </script>
-    {% comment %} <script>
-        $(document).ready(function() {
-        $('#payment_num').on('blur', function() {
-          var num = $('#payment_num').val();
-        //   alert(num)
-          $.ajax({
-            type: "GET",
-            url: "",
-            data: {
-                payment_number: num
-            }
-          }).done(function(response) {
-            console.log(response.status);
-            console.log(response.message);
-            if (!response.status){
-                $('#payment_warning').text(response.message);
-            }
-            else{
-                $('#payment_warning').text("");
-            }
-          })
-        });
-    })
-    </script> {% endcomment %}
+    <script>
+    $(document).on('keyup', '#payment_number', function() {
+        $('#PaymentNoErr').text('');
+        var inv_num = $(this).val();
+        if (inv_num != "") {
+            console.log(inv_num);
+            $.ajax({
+                type: "GET",
+                url: "{% url 'Fin_checkpaymentNumber' %}",
+                data: {
+                    payment_num: inv_num, // Correct parameter name
+                },
+                success: function(response) {
+                    if (response.status) {
+                        $('#PaymentNoErr').text('');
+                    } else {
+                        $('#PaymentNoErr').text(response.message);
+                    }
+                }
+            })
+        }
+    });
+
+    </script> 
     <script>
         $(document).ready(function() {
             $('#select').on('change', function() {

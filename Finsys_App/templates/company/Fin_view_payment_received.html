@@ -1,7 +1,88 @@
 {% extends 'company/Fin_base.html' %}
 {% block body %}
 
-    {% load static %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
+
+<div class="page-content">
+    <div class="card radius-15 h-20">
+      <div class="row">
+        <div class="col-md-12">
+          <center><h2 class="mt-3">PAYMENT RECEIVED</h2></center>
+          <hr/>
+        </div>
+      </div>
+    </div>
+  
+    <div class="card radius-15">
+      <div class="card-body">
+        <div class="container-fluid">
+          <div class="row">
+            <div class="col-md-4">
+              <div class="d-flex">
+                <input type="text" id="search" class="form-control" placeholder="Search.." autocomplete="off"/>
+                <div class="dropdown ml-1" style="justify-content: left">
+                    <button type="button" class="btn btn-outline-secondary dropdown-toggle text-grey" data-toggle="dropdown"><i class="fa fa-sort"></i> Sort by</button>
+                    <div class="dropdown-menu" style="background-color: black">
+                      <a class="dropdown-item" href="" style="height: 40px; font-size: 15px; color: white">All</a>
+                      <a class="dropdown-item" style="height: 40px; font-size: 15px; color: white;cursor: pointer;" onclick="sortTable(3)">Customer Name</a>
+                      <a class="dropdown-item" style="height: 40px; font-size: 15px; color: white;cursor: pointer;" onclick="sortPaymentNumbers()">Payment Number</a>
+                    </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+            </div>
+            <div class="col-md-5 d-flex justify-content-end">
+                <button type="button" class="btn btn-outline-secondary text-grey" onclick="ExportToExcel('xlsx')"><i class="fa fa-table"></i> Export To Excel</button>
+                <div class="dropdown ml-1">
+                <button type="button" class="btn btn-outline-secondary dropdown-toggle text-grey" data-toggle="dropdown"><i class="fa fa-filter"></i> filter by</button>
+                <div class="dropdown-menu" style="background-color: black">
+                    <a class="dropdown-item" style="height: 40px; font-size: 15px; color: white;cursor: pointer;" onclick="filterTable(6,'all')">All</a>
+                    <a class="dropdown-item" style="height: 40px; font-size: 15px; color: white;cursor: pointer;" onclick="filterTable(6,'draft')">Draft</a>
+                    <a class="dropdown-item" style="height: 40px; font-size: 15px; color: white;cursor: pointer;" onclick="filterTable(6,'saved')">Saved</a> 
+                </div>
+              </div>
+              <a href="{% url 'Fin_add_payment_received' %}" class="ml-1"></i><button type="button" class="btn btn-outline-secondary text-grey"><i class="fa fa-plus font-weight-light"></i> Payment</button></a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-responsive-md table-hover mt-4" id="payment_table" style="text-align: center">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>DATE</th>
+              <th>PAYMENT NO</th>
+              <th>CUSTOMER NAME</th>
+              <th>MAIL ID</th>
+              <th>AMOUNT</th>
+              <th>STATUS</th>
+              <th>BALANCE</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for a in payment %}
+            <tr class="clickable-row" data-href="{% url 'Fin_overview_payment_received' a.id %}" style="cursor: pointer;">
+            <td>{{ forloop.counter }}</td>
+              <td>{{ a.payment_date }}</td>
+              <td>{{ a.payment_no }}</td>
+              <td>{{ a.customer.first_name }} {{ a.customer.last_name }}</td>
+              <td>{{ a.customer.email }}</td>
+              <td>{{ a.total_amount }}</td>
+              <td>{{ a.status }}</td>
+              <td>{{ a.total_balance }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  
+
+    <!-- {% load static %}
     {% comment %} {% if user.is_authenticated %} {% endcomment %}
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
@@ -71,118 +152,71 @@ body{
                     <div class="card-title">
                         <center><h2 class="mb-0" style="text-transform: uppercase;">payment received</h2></center>
                         <hr>
-                        <div class="btn-group col-md-2" style="float: right;">
-                            <a class="btn btn-outline-info text-grey" onclick="ExportToExcel('xlsx')">Export To Excel</a>
-                        </div>
+                        
                     </div>
                 </div>
             </div>
             <div class="card radius-15">
                 <div class="card-body">
+
                     <div class="row">
-
-                        
-                        
-                        
-                        <!-- <div class="col-md-4">
-                            <div class="wrap" style="width: 60%; margin-top: 8px;"> -->
-                                <!-- <form action="search_estimate" method="POST">{% csrf_token %} -->
-                                <!-- <div class="search">
-                                    
-                                   <input type="text" id="searchfild" class="searchTerm" name="search">
-                                   <button type="submit" class="searchButton">
-                                     <i class="fa fa-search"></i>
-                                  </button>
-                                </div>
-                                
+                        <div class="col-md-4">
+                          <div class="d-flex">
+                            <input type="text" id="search" placeholder="Search..." class="form-control" autocomplete="off" >                            <div class="dropdown ml-1" style="justify-content: left">
+                              <button type="button" class="btn btn-outline-secondary dropdown-toggle text-grey" data-toggle="dropdown"><i class="fa fa-sort"></i> Sort by</button>
+                              <div class="dropdown-menu" style="background-color: black">
+                                <a class="dropdown-item" href="" style="height: 40px; font-size: 15px; color: white">All</a>
+                                <a class="dropdown-item" style="height: 40px; font-size: 15px; color: white;cursor: pointer;" onclick="sortTable(3)">Customer Name</a>
+                                <a class="dropdown-item" style="height: 40px; font-size: 15px; color: white;cursor: pointer;" onclick="sortPaymentNumbers()">Payment Number</a>
+                              </div>
                               
-                             </div>
-                             
-                        </div> -->
-
+                            </div>
+                          </div>
+                        </div>
                         <div class="col-md-3">
-                            <div class="d-flex">
-                                <input type="text" id="search" placeholder="Search..." class="form-control" autocomplete="off" 
-                            style="margin-top: 8px; background-color: #2f516f;color: white;">
-                            </div>    
                         </div>
-                        <div class="col-md-2" style="width: 40%; margin-top: 9px;">
-                            <div class="dropdown">
-                                <button type="button" class="btn btn-outline-info dropdown-toggle fa fa-sort text-grey"
-                                        data-toggle="dropdown"> Sort by
-                                </button>
-                                <div class="dropdown-menu " style="background-color: black;">
-                                    <a class="dropdown-item	" href=""
-                                    style="height: 40px; font-size: 15px; color: white; text-align: center;" > All
-                               </a>
-                                <a class="dropdown-item	" href=""
-                                    style="height: 40px; font-size: 15px; color: white; text-align: center;" > Customer Name 
-                               </a>
-                                 
-                                <a class="dropdown-item " href=""
-                                    style="height: 40px; font-size: 15px; color: white; text-align: center; " >Payment Number</a>
-                                
-                                        
-                                </div> 
+                        <div class="col-md-5 d-flex justify-content-end">
+                          <button type="button" class="btn btn-outline-secondary text-grey" onclick="ExportToExcel('xlsx')"><i class="fa fa-table"></i> Export To Excel</button>
+                          <div class="dropdown ml-1">
+                            <button type="button" class="btn btn-outline-secondary dropdown-toggle text-grey" data-toggle="dropdown"><i class="fa fa-filter"></i> filter by</button>
+                            <div class="dropdown-menu" style="background-color: black">
+                                <a class="dropdown-item" style="height: 40px; font-size: 15px; color: white;cursor: pointer;" onclick="filterTable(5,'all')">All</a>
+                                <a class="dropdown-item" style="height: 40px; font-size: 15px; color: white;cursor: pointer;" onclick="filterTable(5,'draft')">Draft</a>
+                                <a class="dropdown-item" style="height: 40px; font-size: 15px; color: white;cursor: pointer;" onclick="filterTable(5,'saved')">Saved</a> 
                             </div>
+                          </div>
+                          <a href="{% url 'Fin_add_payment_received' %}" class="ml-1"></i><button type="button" class="btn btn-outline-secondary text-grey"><i class="fa fa-plus font-weight-light"></i> Payment</button></a>
                         </div>
+                      </div>
 
-
-                        <div class="col-md-5" >
-                            <!-- <a href="" >
-                                <button id="myBtn" class="btn btn-outline-info text-grey" style="margin-top: 8px;">New </button>
-                            </a> -->
-                        </div>
-                        <div class="btn-group col-md-2 d-flex align-items-center">
-                            <a class="btn btn-outline-info text-white" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
-                                role="button">Filter By
-                            </a>
-                            <div class="dropdown-menu">
-                                <a class="dropdown-item" href="">All</a>
-                                <a class="dropdown-item" href="">Draft</a>
-                                <a class="dropdown-item" href="">Saved</a>
-                            </div>
-
-                            <!-- Your button with the plus icon -->
-                            <a href="{% url 'Fin_add_payment_received' %}" class="btn btn-outline-info d-inline-flex align-items-center custom-btn text-white" role="button">
-                                <i class="fa fa-plus mr-1"></i> 
-                                New
-                            </a>
-
-                            </div>
-
-                    </div>
+                   
                     <div class="container-fluid ">
                        <div class="app_table">
                         <table class="table table-responsive-md mt-4 table-hover" id="payment_table">
                             <thead>
                             <tr>
-                                <th style="text-align: center;">Date</th>
-                                <th style="text-align: center;">Payment No</th>
-                                <th style="text-align: center;">Customer Name</th>
-                                <th style="text-align: center;">Mail Id</th>
-                                <th style="text-align: center;">Amount</th>
-                                <th style="text-align: center;">Status</th>
-                                <th style="text-align: center;">Balance</th>
-                                <!-- <th style="text-align: center;">ACTION</th> -->
+                                <th>DATE</th>
+                                <th>PAYMENT NO</th>
+                                <th>CUSTOMER NAME</th>
+                                <th>MAIL ID</th>
+                                <th>AMOUNT</th>
+                                <th>STATUS</th>
+                                <th>BALANCE</th>
                             </tr>
                             </thead>
                             <tbody>
-                                {% for i in pay %}
-                                {% if i.cid_id == cmp1.cid %}
-                                    <tr  class="table-row " onclick="window.location.href=`{% url 'payment_view' i.paymentid %}`" >
-                                        <th style="text-align: center;">{{ i.paymdate  | date:'d-m-Y' }}</th>
-                                        <td style="text-align: center;">{{ i.refno }}</td>
-                                        <td style="text-align: center;"> {{ i.customer }}</td>
-                                        <td style="text-align: center;">{{ i.email }}</td>
-                                        <td style="text-align: center;"> {{ i.amtapply }}</td>
-                                        <td style="text-align: center;"> {{ i.status }}</td>
-                                        <td style="text-align: center;">{{ i.balance }}</td>
-                                        
-                                    </tr>
-                                {% endif %}
-                            {% endfor %}
-                            </tbody>
+                                {% for a in payment %}
+                                <tr class="clickable-row" data-href="{% url 'Fin_overview_payment_received' a.id %}" style="cursor: pointer;">
+                                    <td>{{ a.payment_date }}</td>
+                                    <td>{{ a.payment_no }}</td>
+                                    <td>{{ a.customer.first_name }} {{ a.customer.last_name }}</td>
+                                    <td>{{ a.customer.email }}</td>
+                                    <td>{{ a.total_amount }}</td>
+                                    <td>{{ a.status }}</td>
+                                    <td>{{ a.total_balance }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>                            
                         </table>
                        </div>
 
@@ -215,6 +249,7 @@ body{
                 </div>
             </div>
         </div>
+     -->
 
 
         <script>
@@ -312,10 +347,26 @@ body{
             function ExportToExcel(type, fn, dl) {
                 var elt = document.getElementById('payment_table');
                 var wb = XLSX.utils.table_to_book(elt, { sheet: "sheet1" });
+            
+                // Get the first sheet from the workbook
+                var ws = wb.Sheets[wb.SheetNames[0]];
+            
+                // Define column widths (in characters) for specific columns
+                ws['!cols'] = [
+                    { wch: 10 }, // Date column width (increase this value as needed)
+                    { wch: 12 }, // Payment No column width
+                    { wch: 20 }, // Customer Name column width
+                    { wch: 25 }, // Mail Id column width
+                    { wch: 12 }, // Amount column width
+                    { wch: 10 }, // Status column width
+                    { wch: 12 }  // Balance column width
+                ];
+            
                 return dl ?
                     XLSX.write(wb, { bookType: type, bookSST: true, type: 'base64' }) :
                     XLSX.writeFile(wb, fn || ('Payment_received.' + (type || 'xlsx')));
             }
+            
         </script>
         <script>
             $(document).ready(function() {
@@ -343,6 +394,86 @@ body{
         });
     </script>
 
+    <script>
+        function sortPaymentNumbers() {
+            var table, rows, switching, i, x, y, shouldSwitch;
+            table = document.getElementById("payment_table");
+            switching = true;
+            
+            // Start the loop
+            while (switching) {
+                switching = false;
+                rows = table.rows;
+                // Loop through all table rows except the header
+                for (i = 1; i < (rows.length - 1); i++) {
+                    shouldSwitch = false;
+                    // Get the two payment numbers to compare
+                    x = rows[i].getElementsByTagName("TD")[2].innerText.toLowerCase();
+                    y = rows[i + 1].getElementsByTagName("TD")[2].innerText.toLowerCase();
+                    
+                    // Extract numeric part of the payment number
+                    var xNum = parseInt(x.split("-")[1]);
+                    var yNum = parseInt(y.split("-")[1]);
+                    
+                    // Check if the rows should switch
+                    if (xNum > yNum) {
+                        shouldSwitch = true;
+                        break;
+                    }
+                }
+                if (shouldSwitch) {
+                    // If a switch has been marked, switch the rows
+                    rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                    switching = true;
+                }
+            }
+        }
+    </script>
+
+<script>
+      function sortTable(columnIndex) {
+    var table, rows, switching, i, x, y, shouldSwitch;
+    table = document.getElementById("payment_table");
+    switching = true;
+
+    while (switching) {
+      switching = false;
+      rows = table.rows;
+
+      for (i = 1; i < (rows.length - 1); i++) {
+        shouldSwitch = false;
+        x = rows[i].getElementsByTagName("td")[columnIndex].textContent.toLowerCase();
+        y = rows[i + 1].getElementsByTagName("td")[columnIndex].textContent.toLowerCase();
+
+        if (x > y) {
+            shouldSwitch = true;
+            break;
+        }
+      }
+
+      if (shouldSwitch) {
+        rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+        switching = true;
+      }
+    }
+  }
+
+
+  function filterTable(row,filterValue) {
+    var table1 = document.getElementById("payment_table");
+    var rows1 = table1.getElementsByTagName("tr");
+
+    for (var i = 1; i < rows1.length; i++) {
+      var statusCell = rows1[i].getElementsByTagName("td")[row];
+
+      if (filterValue == "all" || statusCell.textContent.toLowerCase() == filterValue) {
+        rows1[i].style.display = "";
+      } else {
+        rows1[i].style.display = "none";
+      }
+    }
+}
+</script>
 
 <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
 
@@ -377,7 +508,17 @@ $('.delete').click(function(event) {
     </script>
 
         
-        
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var rows = document.querySelectorAll(".clickable-row");
+            rows.forEach(function (row) {
+                row.addEventListener("click", function () {
+                    window.location.href = row.getAttribute("data-href");
+                });
+            });
+        });
+    </script>
+    
        
     {% comment %} {% endif %} {% endcomment %}
 {% endblock %}
