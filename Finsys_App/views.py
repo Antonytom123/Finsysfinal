@@ -18776,6 +18776,7 @@ def Fin_Create_Payment_Received(request):
                 bank_no="NULL" if request.POST['bank_acc'] == ""  or request.POST['pmethod'] not in bank_name_list else request.POST['bank_acc'],
                 total_amount=request.POST['tamount'],
                 total_balance=request.POST['tbalance'],
+                total_payment=request.POST['tpayment'],
             )
 
             payment.save()
@@ -18839,6 +18840,9 @@ def Fin_overview_payment_received(request,id):
         pinvoice = Fin_Payment_Invoice.objects.filter(payment = payment,company=com)
         
         allmodules = Fin_Modules_List.objects.get(company_id = com,status = 'New')
+
+        created = Fin_Payment_History.objects.get(payment = payment, action = 'Created')
+
         
         return render(request,'company/Fin_overview_payment_received.html',{'allmodules':allmodules,'com':com,'cmp':com, 'data':data,'payment':payment,'cmt':cmt,'hist':hist,'created':created,'pinvoice':pinvoice})
 
@@ -18889,14 +18893,15 @@ def Fin_Payment_Received_History(request,id):
     if 's_id' in request.session:
         s_id = request.session['s_id']
         data = Fin_Login_Details.objects.get(id = s_id)
+        payment = Fin_Payment_Received.objects.get(id = id)
+        history = Fin_Payment_History.objects.filter(payment = payment)
         if data.User_Type == "Company":
             com = Fin_Company_Details.objects.get(Login_Id = s_id)
             allmodules = Fin_Modules_List.objects.get(Login_Id = s_id,status = 'New')
         else:
             com = Fin_Staff_Details.objects.get(Login_Id = s_id)
             allmodules = Fin_Modules_List.objects.get(company_id = com.company_id,status = 'New')
-        payment = Fin_Payment_Received.objects.get(id = id)
-        history = Fin_Payment_History.objects.filter(payment = payment,Company=com)
+        
         
         return render(request,'company/Fin_Payment_Received_History.html',{'allmodules':allmodules,'com':com,'data':data,'payment':payment, 'history':history})
     else:
@@ -19109,7 +19114,7 @@ def fetch_invoice_data(request):
             try:
                 cust1 = Fin_Customers.objects.get(id=id,Company =cmp1)
                 dict = {
-                    'date':cust1.date.strftime('%m/%d/%Y'),'inv_type':'Opening Balance','trans_no':'','inv_amount':cust1.opening_balance,'inv_balance':i.opening_balance
+                    'date':cust1.date.strftime('%m/%d/%Y'),'inv_type':'Opening Balance','trans_no':'','inv_amount':cust1.opening_balance,'inv_payment':'0','inv_balance':cust1.opening_balance
                 }
                 paymentList.append(dict)
                 date = cust1.date
@@ -19120,7 +19125,7 @@ def fetch_invoice_data(request):
             except:
                 cust1 = Fin_Customers.objects.get(id=id,Company =cmp1)
                 dict = {
-                    'date':cust1.date.strftime('%m/%d/%Y'),'inv_type':'Opening Balance','trans_no':'','inv_amount':cust1.opening_balance,'inv_balance':cust1.opening_balance
+                    'date':cust1.date.strftime('%m/%d/%Y'),'inv_type':'Opening Balance','trans_no':'','inv_amount':cust1.opening_balance,'inv_payment':'0','inv_balance':cust1.opening_balance
                 }
                 paymentList.append(dict)
                 date = cust1.date

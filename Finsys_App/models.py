@@ -1689,7 +1689,8 @@ class Fin_Payment_Received(models.Model):
     bank_no = models.CharField(max_length=100, null=True, blank=True)
     total_amount = models.CharField(max_length=100, null=True, blank=True)
     total_balance = models.CharField(max_length=100, null=True, blank=True)
-  
+    total_payment = models.CharField(max_length=100, null=True, blank=True)
+
     PAYMENT_STATUS = (
         ('Draft','Draft'),
         ('Save','Save'),
