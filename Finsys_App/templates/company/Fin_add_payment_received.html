@@ -3,10 +3,12 @@
 
     {% load static %}
     <style>
-        input:read-only {
-            background-color: rgb(255 255 255 / 14%) !important;
-            color: #fff;
-        }
+        input {
+            background-color: #2f516f;
+            border: 0;
+            border-radius: 5px;
+            color: white;
+          }
         .selectize-input.full {
             background-color: #43596c !important;
             color: white !important;
@@ -14,6 +16,7 @@
            }
     </style>
     <div class="page-content">
+        <span class="d-flex justify-content-end p-2" style="cursor: pointer;" onclick="window.location.href=`{% url 'Fin_view_payment_received' %}`"><i class="fa fa-times-circle text-white" style="font-size: 1.2rem;"></i></span>
         <div class="card radius-15">
             <div class="card-body">
                 <div class="card-title">
@@ -81,7 +84,7 @@
 
                             <div class=" col-md-4 mt-3">
                                 <label class="scol-form-label">Referance Number</label>
-                                <input type="text" name="ref_num" id="ref_num" value="{{ next_count }}" readonly class="form-control" placeholder="Referance Number">
+                                <input type="text" name="ref_num" id="ref_num" value="{{ next_count }}" style="background-color: #43596c; color: white;" readonly class="form-control" placeholder="Referance Number">
                             </div>
                             <div class="col-md-4 mt-3"></div>
                         </div>
@@ -159,21 +162,29 @@
                             </div>
                         </div>
 
-                        <div class="row clearfix mt-4" >
+                        <div class="row">
                             <div class="col-md-7"></div>
-                            <div class="col-md-5 table-responsive-md">
-                                <table class="table table-bordered table-hover" id="tab_logic_total">
-                                    <tbody>
-                                    <tr>
-                                        <th class="text-center">Total Amount</th>
-                                        <td class="text-center"><input type="number" name='tamount' id="tamount" min="0" step="any" placeholder='0.00' class="form-control" readonly></td>
-                                    </tr>
-                                    <tr>
-                                        <th class="text-center">Total Balance</th>
-                                        <td class="text-center"><input type="number" min="0" step="any" name='tbalance' id="tbalance" placeholder='0.00' class="form-control" readonly></td>
-                                    </tr>
-                                    </tbody>
-                                </table>
+                            <div class="col-md-5 table-responsive-md mt-3 " id="tab_logic_total" style="background-color:rgba(0,0,0,.4); border: 1px solid rgba(128, 128, 128, 0.6); margin-left: -2vh;">
+                                <div class="p-3">
+                                    <div class="row container-fluid p-2 m-0">
+                                        <div class="col-sm-4 mt-2"><label for="a" class="text-center">Total Amount</label></div>
+                                        <div class="col-sm-1 mt-2">:</div>
+                                        <div class="col-sm-7 mt-2"><input type="number" name='tamount' id="tamount" min="0" step="any" placeholder='0.00' class="form-control" style="background-color: #43596c; color: white;" readonly></div>
+                                    </div>
+                                    <div class="row container-fluid p-2 m-0" >
+                                        <div class="col-sm-4 mt-2"><label for="a" class="text-center">Total Payment</label></div>
+                                        <div class="col-sm-1 mt-2">:</div>
+                                        <div class="col-sm-7 mt-2"><input type="number" min="0" step="any" name='tpayment' id="tpayment" placeholder='0.00' class="form-control" style="background-color: #43596c; color: white;" readonly></div>
+                                    </div>
+
+                                    <div class="row container-fluid p-2 m-0">
+                                        <div class="col-sm-4 mt-2"><label for="a" class="text-center">Total Balance</label></div>
+                                        <div class="col-sm-1 mt-2">:</div>
+                                        <div class="col-sm-7 mt-2"><input type="number" min="0" step="any" name='tbalance' id="tbalance" placeholder='0.00' class="form-control" style="background-color: #43596c; color: white;" readonly></div>
+                                    </div>
+
+
+                                </div>
                             </div>
                         </div>
              
@@ -188,8 +199,7 @@
                                     </div>
                                 </div>
                                 <div class="col-md-5 mt-3 d-flex">
-                                    <input type="button" class="btn btn-outline-secondary w-50 ml-1 text-light" value="Cancel" onclick="window.location.reload();">
-                                    <input type="submit" class="btn btn-outline-secondary w-50 ml-1 text-light" name="save_as_draft" value="Draft">
+                                    <input type="submit" class="btn btn-outline-secondary w-50 text-light" name="save_as_draft" value="Draft">
                                     <input type="submit" class="btn btn-outline-secondary w-50 ml-1 text-light" name="save_as_saved" value="Save">
                                 </div>
                                 
@@ -1409,27 +1419,34 @@
                     var invdata = JSON.parse(data);
                     var totalAmount = 0;
                     var totalBalance = 0;
+                    var totalPayment = 0; // New variable to store total payment
+                    console.log(totalPayment)
                     for (key in invdata) {
                         totalAmount += parseFloat(invdata[key]['inv_amount']);
                         totalBalance += parseFloat(invdata[key]['inv_balance']);
+                        totalPayment += parseFloat(invdata[key]['inv_payment']); // Summing up invoice payments
+                        console.log(totalBalance)
+                        console.log(totalPayment)
                         $('#invoicedata').append(
                             `
                             <tr id='addr${parseInt(key) + 1}' style="height:6rem;">
                                 <td>${parseInt(key) + 1}</td>
-                                <td style="position: relative;"><input type="text" readonly name="inv_date[]" id="" value="${formatDate(invdata[key]['date'])}" class="form-control"/>  </td>
-                                <td><input type="text" readonly name='duedate[]' id="duedate_${key}" value="${formatDate(invdata[key]['date'])}" class="form-control"/></td>
-                                <td><input type="text" readonly name='inv_type[]' id="" value="${invdata[key]['inv_type']}" class="form-control"/></td>                                
-                                <td><input type="text" readonly name='trans_no[]' value="${invdata[key]['trans_no']}" id="" class="form-control"/></td>
-                                <td><input type="number" readonly name='inv_amount[]' id="inv_amount${parseInt(key) + 1}" value="${invdata[key]['inv_amount']}" class="form-control"/></td>
-                                <td><input type="number" readonly name='inv_payment[]' id="inv_payment${parseInt(key) + 1}" value="${invdata[key]['inv_payment']}" class="form-control"/></td>
-                                <td><input type="number" readonly name='inv_balance[]' id="inv_balance${parseInt(key) + 1}" value="${invdata[key]['inv_balance']}" class="form-control"/></td>
+                                <td style="position: relative;"><input type="text" readonly name="inv_date[]" id="" value="${formatDate(invdata[key]['date'])}" class="form-control" style="background-color: #43596c; color: white;" />  </td>
+                                <td><input type="text" readonly name='duedate[]' id="duedate_${key}" value="${formatDate(invdata[key]['date'])}" class="form-control" style="background-color: #43596c; color: white;" /></td>
+                                <td><input type="text" readonly name='inv_type[]' id="" value="${invdata[key]['inv_type']}" class="form-control" style="background-color: #43596c; color: white;" /></td>                                
+                                <td><input type="text" readonly name='trans_no[]' value="${invdata[key]['trans_no']}" id="" class="form-control" style="background-color: #43596c; color: white;" /></td>
+                                <td><input type="number" readonly name='inv_amount[]' id="inv_amount${parseInt(key) + 1}" value="${invdata[key]['inv_amount']}" class="form-control" style="background-color: #43596c; color: white;" /></td>
+                                <td><input type="number" readonly name='inv_payment[]' id="inv_payment${parseInt(key) + 1}" value="${invdata[key]['inv_payment']}" class="form-control" style="background-color: #43596c; color: white;" /></td>
+                                <td><input type="number" readonly name='inv_balance[]' id="inv_balance${parseInt(key) + 1}" value="${invdata[key]['inv_balance']}" class="form-control" style="background-color: #43596c; color: white;" /></td>
                             </tr>
                             `
                         );
                     }
-                    // Set total amount and total balance in their respective input boxes
+                    // Set total amount, total balance, and total payment in their respective input boxes
                     $('#tamount').val(totalAmount.toFixed(2));
                     $('#tbalance').val(totalBalance.toFixed(2));
+                    $('#tpayment').val(totalPayment.toFixed(2)); 
+                    console.log('tpayment')
                 }
             });
         }
@@ -1443,7 +1460,6 @@
         });
     });
     
-
         function formatDate(dateString) {
             // Parse the input string as a date
             var date = new Date(dateString);

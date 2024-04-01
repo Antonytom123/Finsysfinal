@@ -3,10 +3,12 @@
 
     {% load static %}
     <style>
-        input:read-only {
-            background-color: rgb(255 255 255 / 14%) !important;
-            color: #fff;
-        }
+        input {
+            background-color: #2f516f;
+            border: 0;
+            border-radius: 5px;
+            color: white;
+          }
         .selectize-input.full {
             background-color: #43596c !important;
             color: white !important;
@@ -14,6 +16,7 @@
            }
     </style>
     <div class="page-content">
+        <span class="d-flex justify-content-end p-2" style="cursor: pointer;" onclick="window.location.href=`{% url 'Fin_overview_payment_received' payment.id %}`"><i class="fa fa-times-circle text-white" style="font-size: 1.2rem;"></i></span>
         <div class="card radius-15">
             <div class="card-body">
                 <div class="card-title">
@@ -84,7 +87,7 @@
 
                             <div class=" col-md-4 mt-3">
                                 <label class="scol-form-label">Referance Number</label>
-                                <input type="text" name="ref_num" id="ref_num" value="{{ payment.referance_no }}" readonly class="form-control" placeholder="Referance Number">
+                                <input type="text" name="ref_num" id="ref_num" value="{{ payment.referance_no }}" style="background-color: #43596c; color: white;" readonly class="form-control" placeholder="Referance Number">
                             </div>
                             <div class="col-md-4 mt-3"></div>
                         </div>
@@ -114,36 +117,36 @@
                                 {% if payment.bank_no != 'NULL' %}
                                 <div class="pymnt-methd-inp" id="bank-field" style=" flex-direction: column;">
                                     <label class="scol-form-label">Account #</label>
-                                    <input type="text" name="bank_acc" id="bankacc_inp" value="{{ payment.bank_no }}" class="form-control" placeholder="Account #" readonly>
+                                    <input type="text" name="bank_acc" id="bankacc_inp" value="{{ payment.bank_no }}" class="form-control" style="background-color: #43596c; color: white;" placeholder="Account #" readonly>
                                 </div>
                                 {% else %}
                                 <div class="pymnt-methd-inp" id="bank-field" style="display: none; flex-direction: column;">
                                     <label class="scol-form-label">Account #</label>
-                                    <input type="text" name="bank_acc" id="bankacc_inp" value="{{ payment.bank_no }}" class="form-control" placeholder="Account #" readonly>
+                                    <input type="text" name="bank_acc" id="bankacc_inp" value="{{ payment.bank_no }}" style="background-color: #43596c; color: white;" class="form-control" placeholder="Account #" readonly>
                                 </div>
                                 {% endif %}
                                 
                                 {% if payment.cheque_no != 'NULL' %}
                                 <div class="pymnt-methd-inp" id="cheq-field" style=" flex-direction: column;">
                                     <label class="scol-form-label">Cheque ID</label>
-                                    <input type="text" name="chq_id" id="chequeid_inp" value="{{ payment.cheque_no }}" class="form-control" placeholder="Cheque ID" >
+                                    <input type="text" name="chq_id" id="chequeid_inp" value="{{ payment.cheque_no }}" style="background-color: #43596c; color: white;" class="form-control" placeholder="Cheque ID" >
                                 </div>
                                 {% else %}
                                 <div class="pymnt-methd-inp" id="cheq-field" style="display: none;  flex-direction: column;">
                                     <label class="scol-form-label">Cheque ID</label>
-                                    <input type="text" name="chq_id" id="chequeid_inp" value="{{ payment.cheque_no }}" class="form-control" placeholder="Cheque ID" >
+                                    <input type="text" name="chq_id" id="chequeid_inp" value="{{ payment.cheque_no }}" style="background-color: #43596c; color: white;" class="form-control" placeholder="Cheque ID" >
                                 </div>
                                 {% endif %}
                                 
                                 {% if payment.upi_no != 'NULL'%}
                                 <div class="pymnt-methd-inp" id="upi-field" style=" flex-direction: column;">
                                     <label class="scol-form-label">UPI ID</label>
-                                    <input type="text" name="upiid" id="upi_inp" value="{{ payment.upi_no }}" class="form-control" placeholder="UPI ID" >
+                                    <input type="text" name="upiid" id="upi_inp" value="{{ payment.upi_no }}" style="background-color: #43596c; color: white;" class="form-control" placeholder="UPI ID" >
                                 </div>
                                 {% else %}
                                 <div class="pymnt-methd-inp" id="upi-field" style=" display: none; flex-direction: column;">
                                     <label class="scol-form-label">UPI ID</label>
-                                    <input type="text" name="upiid" id="upi_inp" value="{{ payment.upi_no }}" class="form-control" placeholder="UPI ID">
+                                    <input type="text" name="upiid" id="upi_inp" value="{{ payment.upi_no }}" style="background-color: #43596c; color: white;" class="form-control" placeholder="UPI ID">
                                 </div>
                                 {% endif %}
                             </div>
@@ -183,13 +186,13 @@
 
                                         <tr 'addr{{forloop.counter}}'>
                                             <td>{{forloop.counter}}</td>
-                                            <td style="position: relative;"><input type="text" readonly name="inv_date[]" id="" value="{{i.pdate | date:'Y-m-d' }}" class="form-control"/>  </td>
-                                            <td><input type="text" readonly name='duedate[]' id="" value="{{i.pduedate| date:'Y-m-d' }}" class="form-control"/></td>
-                                            <td><input type="text" readonly name='inv_type[]' id="" value="{{i.pinvoice_type}}" class="form-control"/></td>                                
-                                            <td><input type="text" readonly name='trans_no[]' value="{{i.pinvoice_no}}" id="" class="form-control"/></td>
-                                            <td><input type="number" readonly name='inv_amount[]' id="" value="{{i.pinvoice_amount}}" class="form-control"/></td>
-                                            <td><input type="number" readonly name='inv_payment[]' id="" value="{{i.pinvoice_payment}}" class="form-control"/></td>
-                                            <td><input type="number" readonly name='inv_balance[]' id="inv_balance${parseInt(key) + 1}" value="{{i.p_invoice_balance}}" class="form-control"/></td>
+                                            <td style="position: relative;"><input type="text" readonly name="inv_date[]" id="" value="{{i.pdate | date:'Y-m-d' }}" class="form-control" style="background-color: #43596c; color: white;" />  </td>
+                                            <td><input type="text" readonly name='duedate[]' id="" value="{{i.pduedate| date:'Y-m-d' }}" class="form-control" style="background-color: #43596c; color: white;" /></td>
+                                            <td><input type="text" readonly name='inv_type[]' id="" value="{{i.pinvoice_type}}" class="form-control" style="background-color: #43596c; color: white;" /></td>                                
+                                            <td><input type="text" readonly name='trans_no[]' value="{{i.pinvoice_no}}" id="" class="form-control" style="background-color: #43596c; color: white;" /></td>
+                                            <td><input type="number" readonly name='inv_amount[]' id="" value="{{i.pinvoice_amount}}" class="form-control" style="background-color: #43596c; color: white;" /></td>
+                                            <td><input type="number" readonly name='inv_payment[]' id="" value="{{i.pinvoice_payment}}" class="form-control" style="background-color: #43596c; color: white;" /></td>
+                                            <td><input type="number" readonly name='inv_balance[]' id="inv_balance${parseInt(key) + 1}" value="{{i.p_invoice_balance}}" class="form-control" style="background-color: #43596c; color: white;" /></td>
                                         </tr>
                                         {% endfor %}
                                        
@@ -197,22 +200,26 @@
                                 </table>
                             </div>
                         </div>
-
-                        <div class="row clearfix mt-4" >
+                        <div class="row">
                             <div class="col-md-7"></div>
-                            <div class="col-md-5 table-responsive-md">
-                                <table class="table table-bordered table-hover" id="tab_logic_total">
-                                    <tbody>
-                                    <tr>
-                                        <th class="text-center">Total Amount</th>
-                                        <td class="text-center"><input type="number" name='tamount' id="tamount" value="{{payment.total_amount}}" min="0" step="any" placeholder='0.00' class="form-control" readonly></td>
-                                    </tr>
-                                    <tr>
-                                        <th class="text-center">Total Balance</th>
-                                        <td class="text-center"><input type="number" min="0" step="any" name='tbalance' id="tbalance" value="{{payment.total_balance}}" placeholder='0.00' class="form-control" readonly></td>
-                                    </tr>
-                                    </tbody>
-                                </table>
+                            <div class="col-md-5 table-responsive-md mt-3 " id="tab_logic_total" style="background-color:rgba(0,0,0,.4); border: 1px solid rgba(128, 128, 128, 0.6); margin-left: -2vh;">
+                                <div class="p-3">
+                                    <div class="row container-fluid p-2 m-0">
+                                        <div class="col-sm-4 mt-2"><label for="a" class="text-center">Total Amount</label></div>
+                                        <div class="col-sm-1 mt-2">:</div>
+                                        <div class="col-sm-7 mt-2"><input type="number" name='tamount' id="tamount" min="0" step="any" value="{{payment.total_amount}}" class="form-control" style="background-color: #43596c; color: white;" readonly></div>
+                                    </div>
+                                    <div class="row container-fluid p-2 m-0" >
+                                        <div class="col-sm-4 mt-2"><label for="a" class="text-center">Total Payment</label></div>
+                                        <div class="col-sm-1 mt-2">:</div>
+                                        <div class="col-sm-7 mt-2"><input type="number" min="0" step="any" name='tpayment' id="tpayment" value="{{payment.total_payment}}" class="form-control" style="background-color: #43596c; color: white;" readonly></div>
+                                    </div>
+                                    <div class="row container-fluid p-2 m-0">
+                                        <div class="col-sm-4 mt-2"><label for="a" class="text-center">Total Balance</label></div>
+                                        <div class="col-sm-1 mt-2">:</div>
+                                        <div class="col-sm-7 mt-2"><input type="number" min="0" step="any" name='tbalance' id="tbalance" value="{{payment.total_balance}}" class="form-control" style="background-color: #43596c; color: white;" readonly></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -227,8 +234,8 @@
                                 </div>
                             </div>
                             <div class="col-md-5 mt-3 d-flex">
-                                <input type="button" class="btn btn-outline-secondary w-50 ml-1 text-light" value="Cancel" onclick="window.location.reload();">
                                 <input type="submit" class="btn btn-outline-secondary w-50 ml-1 text-light" name="save_as_saved" value="Save">
+                                <input type="button" class="btn btn-outline-secondary w-50 ml-1 text-light" value="Cancel" onclick="window.location.href=`{% url 'Fin_overview_payment_received' payment.id %}`">
                             </div>
                             
                         </div>
@@ -1418,13 +1425,13 @@
                             `
                             <tr id='addr${parseInt(key) + 1}' style="height:6rem;">
                                 <td>${parseInt(key) + 1}</td>
-                                <td style="position: relative;"><input type="text" readonly name="inv_date[]" id="" value="${formatDate(invdata[key]['date'])}" class="form-control"/>  </td>
-                                <td><input type="text" readonly name='duedate[]' id="duedate_${key}" value="${formatDate(invdata[key]['date'])}" class="form-control"/></td>
-                                <td><input type="text" readonly name='inv_type[]' id="" value="${invdata[key]['inv_type']}" class="form-control"/></td>                                
-                                <td><input type="text" readonly name='trans_no[]' value="${invdata[key]['trans_no']}" id="" class="form-control"/></td>
-                                <td><input type="number" readonly name='inv_amount[]' id="inv_amount${parseInt(key) + 1}" value="${invdata[key]['inv_amount']}" class="form-control"/></td>
-                                <td><input type="number" readonly name='inv_payment[]' id="inv_payment${parseInt(key) + 1}" value="${invdata[key]['inv_payment']}" class="form-control"/></td>
-                                <td><input type="number" readonly name='inv_balance[]' id="inv_balance${parseInt(key) + 1}" value="${invdata[key]['inv_balance']}" class="form-control"/></td>
+                                <td style="position: relative;"><input type="text" readonly name="inv_date[]" id="" value="${formatDate(invdata[key]['date'])}" class="form-control" style="background-color: #43596c; color: white;" />  </td>
+                                <td><input type="text" readonly name='duedate[]' id="duedate_${key}" value="${formatDate(invdata[key]['date'])}" class="form-control" style="background-color: #43596c; color: white;" /></td>
+                                <td><input type="text" readonly name='inv_type[]' id="" value="${invdata[key]['inv_type']}" class="form-control" style="background-color: #43596c; color: white;" /></td>                                
+                                <td><input type="text" readonly name='trans_no[]' value="${invdata[key]['trans_no']}" id="" class="form-control" style="background-color: #43596c; color: white;" /></td>
+                                <td><input type="number" readonly name='inv_amount[]' id="inv_amount${parseInt(key) + 1}" value="${invdata[key]['inv_amount']}" class="form-control" style="background-color: #43596c; color: white;"/></td>
+                                <td><input type="number" readonly name='inv_payment[]' id="inv_payment${parseInt(key) + 1}" value="${invdata[key]['inv_payment']}" class="form-control" style="background-color: #43596c; color: white;" /></td>
+                                <td><input type="number" readonly name='inv_balance[]' id="inv_balance${parseInt(key) + 1}" value="${invdata[key]['inv_balance']}" class="form-control" style="background-color: #43596c; color: white;" /></td>
                             </tr>
                             `
                         );
